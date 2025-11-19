@@ -136,7 +136,7 @@ return (
       />
 
       <Text style={styles.footer}>
-        Enter your expenses and they’ll be saved locally with SQLite.
+        Enter your expenses and theyll be saved locally with SQLite.
       </Text>
     </SafeAreaView>
   );

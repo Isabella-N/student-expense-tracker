@@ -9,5 +9,3 @@ export default function App() {
   );
 }
 // Code Given to Me from Class
-
-
