@@ -139,7 +139,7 @@ return (
         Enter your expenses and theyll be saved locally with SQLite.
       </Text>
     </SafeAreaView>
-  );
+  )};
 
   const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#111827' },
@@ -199,4 +199,3 @@ return (
     fontSize: 12,
   },
 });
-}
