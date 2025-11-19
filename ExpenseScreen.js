@@ -13,7 +13,6 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 export default function ExpenseScreen() {
   const db = useSQLiteContext();
-
   const [expenses, setExpenses] = useState([]);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
