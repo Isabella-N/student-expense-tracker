@@ -128,7 +128,6 @@ const loadAnalytics = async (mode = filter) => {
     setNote("");
 
     loadExpenses(filter);
-  };
 
   // Update Expense
 const updateExpense = async () => {
@@ -155,7 +154,7 @@ const updateExpense = async () => {
 
   loadExpenses(filter); // refresh list + totals
 };
-
+  };
   // Delete Expense
   const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
