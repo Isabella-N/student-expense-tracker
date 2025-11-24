@@ -19,14 +19,34 @@ export default function ExpenseScreen() {
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
 
+// LOAD EXPENSES
+const loadExpenses = async (mode = filter) => {
+    let query = "SELECT * FROM expenses ORDER BY id DESC;";
+    let params = [];
 
-const loadExpenses = async () => {
-    const rows = await db.getAllAsync(
-      'SELECT * FROM expenses ORDER BY id DESC;'
-    );
-    setExpenses(rows);
-  };
+  if (mode === "week") {
+    query = `
+      SELECT * FROM expenses
+      WHERE strftime('%W', date) = strftime('%W', 'now')
+      AND strftime('%Y', date) = strftime('%Y', 'now')
+      ORDER BY id DESC;
+    `;
+  }
 
+  if (mode === "month") {
+    query = `
+      SELECT * FROM expenses
+      WHERE strftime('%m', date) = strftime('%m', 'now')
+      AND strftime('%Y', date) = strftime('%Y', 'now')
+      ORDER BY id DESC;
+    `;
+  }
+
+  const rows = await db.getAllAsync(query, params);
+  setExpenses(rows);
+};
+
+// ------------------------------
 const addExpense = async () => {
     const amountNumber = parseFloat(amount);
 
@@ -53,12 +73,12 @@ const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     setCategory('');
     setNote('');
 
-    loadExpenses();
+    loadExpenses(filter);
   };
 
 const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
-    loadExpenses();
+    loadExpenses(filter);
   };
 
   const renderExpense = ({ item }) => (
