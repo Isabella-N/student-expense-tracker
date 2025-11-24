@@ -136,21 +136,27 @@ const loadAnalytics = async (mode = filter) => {
 
   // Update Expense
   const updateExpense = async () => {
-  const amountNumber = parseFloat(editAmount);
+  const amountNumber = parseFloat(amount);
 
   if (isNaN(amountNumber) || amountNumber <= 0) return;
 
-  const trimmedCategory = editCategory.trim();
+  const trimmedCategory = category.trim();
   if (!trimmedCategory) return;
 
+  const trimmedNote = note.trim();
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
   await db.runAsync(
     `UPDATE expenses
-     SET amount = ?, category = ?, note = ?
+     SET amount = ?, category = ?, note = ?, date = ?
      WHERE id = ?;`,
-    [amountNumber, trimmedCategory, editNote || null, editing.id]
+    [amountNumber, trimmedCategory, trimmedNote || null, today, editingId]
   );
 
-  setEditing(null); // close modal
+  setEditingId(null); // close modal
+  setAmount('');
+  setCategory('');
+  setNote('');
+
   loadExpenses(filter); // refresh list + totals
 };
 
@@ -249,7 +255,8 @@ return (
           value={note}
           onChangeText={setNote}
         />
-        <Button title={editingId ? "Save Changes" : "Add Expense"} onPress={saveExpense}/>
+        <Button title={editingId ? "Save Changes" : "Add Expense"} 
+        onPress={editingId ? updateExpense : addExpense}/>
       </View>
 
       <FlatList
