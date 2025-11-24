@@ -23,9 +23,46 @@ export default function ExpenseScreen() {
   const [categoryTotals, setCategoryTotals] = useState([]); // Added for Category Totals
 
 // LOAD EXPENSES
-const loadExpenses = async (mode = filter) => {
+const loadAnalytics = async (mode = filter) => {
+  let where = "";
+  
+  if (mode === "week") {
+    where = `
+      WHERE strftime('%W', date) = strftime('%W', 'now')
+      AND strftime('%Y', date) = strftime('%Y', 'now')
+    `;
+  }
+
+  if (mode === "month") {
+    where = `
+      WHERE strftime('%m', date) = strftime('%m', 'now')
+      AND strftime('%Y', date) = strftime('%Y', 'now')
+    `;
+  }
+
+  //Total Spending 
+   const totalRow = await db.getFirstAsync(`
+    SELECT SUM(amount) as total FROM expenses
+    ${where};
+  `);
+
+  setTotal(totalRow?.total || 0);
+
+  //Category Totals
+    const categoryRows = await db.getAllAsync(`
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    ${where}
+    GROUP BY category
+    ORDER BY total DESC;
+  `);
+
+  setCategoryTotals(categoryRows);
+  };
+
+  //Load Expenses Function
+  const loadExpenses = async (mode = filter) => {
     let query = "SELECT * FROM expenses ORDER BY id DESC;";
-    let params = [];
 
   if (mode === "week") {
     query = `
@@ -48,68 +85,21 @@ const loadExpenses = async (mode = filter) => {
  // Load the filtered expense rows
   const rows = await db.getAllAsync(query);
   setExpenses(rows);
+
   await loadAnalytics(mode); // Load analytics data
+  };
 
-  const loadAnalytics = async (mode = filter) => {
-  let where = "";
-  
-  if (mode === "week") {
-    where = `
-      WHERE strftime('%W', date) = strftime('%W', 'now')
-      AND strftime('%Y', date) = strftime('%Y', 'now')
-    `;
-  }
-
-  if (mode === "month") {
-    where = `
-      WHERE strftime('%m', date) = strftime('%m', 'now')
-      AND strftime('%Y', date) = strftime('%Y', 'now')
-    `;
-  }
-
-  //Overall Total
-  const totalRow = await db.getFirstAsync(`
-    SELECT SUM(amount) as total FROM expenses
-    ${where};
-  `);
-
-  setTotal(totalRow?.total || 0);
-
-  //Category Totals
-  const categoryRows = await db.getAllAsync(`
-    SELECT category, SUM(amount) as total
-    FROM expenses
-    ${where}
-    GROUP BY category
-    ORDER BY total DESC;
-  `);
-
-  setCategoryTotals(categoryRows);
-};
-  }
-
-  const sum = rows.reduce((acc, curr) => acc + curr.amount, 0);
-  setTotal(sum) //Added for total spending for this filter 
-};
-
-// ------------------------------
-const addExpense = async () => {
+  //Add Expense
+  const addExpense = async () => {
     const amountNumber = parseFloat(amount);
 
-    if (isNaN(amountNumber) || amountNumber <= 0) {
-      return;
-    }
+    if (isNaN(amountNumber) || amountNumber <= 0) return;
 
     const trimmedCategory = category.trim();
+    if (!trimmedCategory) return;
+
     const trimmedNote = note.trim();
-
-    if (!trimmedCategory) {
-      // Category is required
-      return;
-    }
-
-// Changed "await db.runAsyc" to include a Manual Date Enrty
-const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     await db.runAsync(
       'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
       [amountNumber, trimmedCategory, trimmedNote || null, today]
@@ -122,11 +112,13 @@ const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     loadExpenses(filter);
   };
 
-const deleteExpense = async (id) => {
+  // Delete Expense
+  const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
     loadExpenses(filter);
   };
 
+  // Render Expense Row
   const renderExpense = ({ item }) => (
     <View style={styles.expenseRow}>
       <View style={{ flex: 1 }}>
@@ -140,6 +132,7 @@ const deleteExpense = async (id) => {
       </TouchableOpacity>
     </View>
   );
+
 
 // Alterd CREATE TABLE for Date Addition
   useEffect(() => {
@@ -160,6 +153,8 @@ const deleteExpense = async (id) => {
     setup();
   }, []);
 
+
+// Return JSX
 return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
@@ -235,6 +230,7 @@ return (
       </Text>
     </SafeAreaView>
   );
+}
 
 
   // STYLE ------------------------------------------
