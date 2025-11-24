@@ -18,6 +18,7 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
+  const [total, setTotal] = useState(0); //Added for Total Spending
 
 // LOAD EXPENSES
 const loadExpenses = async (mode = filter) => {
@@ -43,7 +44,10 @@ const loadExpenses = async (mode = filter) => {
   }
 
   const rows = await db.getAllAsync(query, params);
-  setExpenses(rows);
+  setExpenses(rows)
+
+  const sum = rows.reduce((acc, curr) => acc + item.amount, 0);
+  setTotal(sum) //Added for total spending for this filter 
 };
 
 // ------------------------------
@@ -119,11 +123,17 @@ return (
       <Text style={styles.heading}>Student Expense Tracker</Text>
 
       {/* ADDING a filter buttons to the UI */}
-      <View style={styles.filterContainer}>
+      <View style={styles.filterRow}>
         <Button title="All" onPress={() => { setFilter("all"); loadExpenses("all"); }} />
         <Button title="This Week" onPress={() => { setFilter("week"); loadExpenses("week"); }} />
         <Button title="This Month" onPress={() => { setFilter("month"); loadExpenses("month"); }} />
       </View>
+      {/* END */}
+
+      {/* Show Total Spending in the UI */}
+      <Text style={styles.totalText}>
+        Total Spending ({filter === "all" ? "All" : filter === "week" ? "This Week" : "This Month"}): ${total.toFixed(2)}
+      </Text>
       {/* END */}
 
       <View style={styles.form}>
@@ -230,6 +240,12 @@ return (
     flexDirection: "row",
     justifyContent: "space-around",
     marginBottom: 16,
+  },
+  totalText: {
+    color: "#fbbf24",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
   },
 });
 
