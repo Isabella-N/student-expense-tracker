@@ -18,6 +18,7 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
+  const [filter, setFilter] = useState('all'); // Added for Filter
   const [total, setTotal] = useState(0); //Added for Total Spending
   const [categoryTotals, setCategoryTotals] = useState([]); // Added for Category Totals
 
@@ -42,7 +43,13 @@ const loadExpenses = async (mode = filter) => {
       AND strftime('%Y', date) = strftime('%Y', 'now')
       ORDER BY id DESC;
     `;
-  
+  }
+
+ // Load the filtered expense rows
+  const rows = await db.getAllAsync(query);
+  setExpenses(rows);
+  await loadAnalytics(mode); // Load analytics data
+
   const loadAnalytics = async (mode = filter) => {
   let where = "";
   
@@ -60,7 +67,7 @@ const loadExpenses = async (mode = filter) => {
     `;
   }
 
-  // ---- Overall Total ----
+  //Overall Total
   const totalRow = await db.getFirstAsync(`
     SELECT SUM(amount) as total FROM expenses
     ${where};
@@ -68,7 +75,7 @@ const loadExpenses = async (mode = filter) => {
 
   setTotal(totalRow?.total || 0);
 
-  // ---- Category Totals ----
+  //Category Totals
   const categoryRows = await db.getAllAsync(`
     SELECT category, SUM(amount) as total
     FROM expenses
@@ -81,11 +88,7 @@ const loadExpenses = async (mode = filter) => {
 };
   }
 
-  const rows = await db.getAllAsync(query, params);
-  setExpenses(rows)
-  loadAnalytics(mode); // Load analytics data
-
-  const sum = rows.reduce((acc, curr) => acc + item.amount, 0);
+  const sum = rows.reduce((acc, curr) => acc + curr.amount, 0);
   setTotal(sum) //Added for total spending for this filter 
 };
 
@@ -231,7 +234,7 @@ return (
         Enter your expenses and theyll be saved locally with SQLite.
       </Text>
     </SafeAreaView>
-  )};
+  );
 
 
   // STYLE ------------------------------------------
