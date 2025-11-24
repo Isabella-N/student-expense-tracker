@@ -22,10 +22,6 @@ export default function ExpenseScreen() {
   const [total, setTotal] = useState(0); //Added for Total Spending
   const [categoryTotals, setCategoryTotals] = useState([]); // Added for Category Totals
   const [editingId, setEditingId] = useState(null); //Added for Editing Mode
-  const [editing, setEditing] = useState(null); // Added for Editing State
-  const [editAmount, setEditAmount] = useState(" "); // Added for Edit Amount
-  const [editCategory, setEditCategory] = useState(" "); // Added for Edit Category
-  const [editNote, setEditNote] = useState(" "); // Added for Edit Note
 
 // LOAD EXPENSES
 const loadAnalytics = async (mode = filter) => {
@@ -135,7 +131,7 @@ const loadAnalytics = async (mode = filter) => {
   };
 
   // Update Expense
-  const updateExpense = async () => {
+const updateExpense = async () => {
   const amountNumber = parseFloat(amount);
 
   if (isNaN(amountNumber) || amountNumber <= 0) return;
