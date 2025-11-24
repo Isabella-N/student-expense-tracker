@@ -1,5 +1,5 @@
-import { SQLiteProvider } from 'expo-sqlite';
-import ExpenseScreen from './ExpenseScreen';
+import { SQLiteProvider } from "expo-sqlite";
+import ExpenseScreen from "./ExpenseScreen";
 
 export default function App() {
   return (

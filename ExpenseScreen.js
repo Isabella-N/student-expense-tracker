@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
+// EXPORT
 export default function ExpenseScreen() {
   const db = useSQLiteContext();
   const [expenses, setExpenses] = useState([]);
@@ -18,7 +19,6 @@ export default function ExpenseScreen() {
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
 
-//   Code Given to Me from Class
 
 const loadExpenses = async () => {
     const rows = await db.getAllAsync(
@@ -26,13 +26,11 @@ const loadExpenses = async () => {
     );
     setExpenses(rows);
   };
-// LoadExpenses: Reading Rows from SQLite
 
 const addExpense = async () => {
     const amountNumber = parseFloat(amount);
 
     if (isNaN(amountNumber) || amountNumber <= 0) {
-      // Basic validation: ignore invalid or non-positive amounts
       return;
     }
 
@@ -44,9 +42,11 @@ const addExpense = async () => {
       return;
     }
 
+// Changed "await db.runAsyc" to include a Manual Date Enrty
+const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     await db.runAsync(
-      'INSERT INTO expenses (amount, category, note) VALUES (?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote || null]
+      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
+      [amountNumber, trimmedCategory, trimmedNote || null, today]
     );
 
     setAmount('');
@@ -55,13 +55,11 @@ const addExpense = async () => {
 
     loadExpenses();
   };
-//AddExpense: Inserting Rows into SQLite
 
 const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
     loadExpenses();
   };
-//DeleteExpense: Deleting Rows from SQLite
 
   const renderExpense = ({ item }) => (
     <View style={styles.expenseRow}>
@@ -77,8 +75,7 @@ const deleteExpense = async (id) => {
     </View>
   );
 
-// RenderExpense: $ the ExpkDisplaying Each Expense Row
-
+// Alterd CREATE TABLE for Date Addition
   useEffect(() => {
     async function setup() {
       await db.execAsync(`
@@ -86,7 +83,8 @@ const deleteExpense = async (id) => {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           amount REAL NOT NULL,
           category TEXT NOT NULL,
-          note TEXT
+          note TEXT,
+          date TEXT NOT NULL
         );
       `);
 
@@ -99,6 +97,14 @@ const deleteExpense = async (id) => {
 return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
+
+      {/* ADDING a filter buttons to the UI */}
+      <View style={styles.filterContainer}>
+        <Button title="All" onPress={() => { setFilter("all"); loadExpenses("all"); }} />
+        <Button title="This Week" onPress={() => { setFilter("week"); loadExpenses("week"); }} />
+        <Button title="This Month" onPress={() => { setFilter("month"); loadExpenses("month"); }} />
+      </View>
+      {/* END */}
 
       <View style={styles.form}>
         <TextInput
@@ -141,6 +147,8 @@ return (
     </SafeAreaView>
   )};
 
+
+  // STYLE ------------------------------------------
   const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#111827' },
   heading: {
@@ -198,4 +206,10 @@ return (
     marginTop: 12,
     fontSize: 12,
   },
+  filterRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 16,
+  },
 });
+
