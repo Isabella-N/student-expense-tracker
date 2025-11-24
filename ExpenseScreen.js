@@ -21,6 +21,11 @@ export default function ExpenseScreen() {
   const [filter, setFilter] = useState('all'); // Added for Filter
   const [total, setTotal] = useState(0); //Added for Total Spending
   const [categoryTotals, setCategoryTotals] = useState([]); // Added for Category Totals
+  const [editingId, setEditingId] = useState(null); //Added for Editing Mode
+  const [editing, setEditing] = useState(null); // Added for Editing State
+  const [editAmount, setEditAmount] = useState(" "); // Added for Edit Amount
+  const [editCategory, setEditCategory] = useState(" "); // Added for Edit Category
+  const [editNote, setEditNote] = useState(" "); // Added for Edit Note
 
 // LOAD EXPENSES
 const loadAnalytics = async (mode = filter) => {
@@ -49,7 +54,7 @@ const loadAnalytics = async (mode = filter) => {
   setTotal(totalRow?.total || 0);
 
   //Category Totals
-    const categoryRows = await db.getAllAsync(`
+  const categoryRows = await db.getAllAsync(`
     SELECT category, SUM(amount) as total
     FROM expenses
     ${where}
@@ -100,17 +105,54 @@ const loadAnalytics = async (mode = filter) => {
 
     const trimmedNote = note.trim();
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    await db.runAsync(
-      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote || null, today]
+  
+    if (editingId !== null) {
+      await db.runAsync(
+      'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
+      [amountNumber, trimmedCategory, trimmedNote || null, today, editingId]
     );
 
+    // Reset Form
+    setEditingId(null);
     setAmount('');
     setCategory('');
     setNote('');
 
     loadExpenses(filter);
+    return;
+  }
+
+    await db.runAsync(
+      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
+      [amountNumber, trimmedCategory, trimmedNote || null, today]
+    );
+    
+    setAmount("");
+    setCategory("");
+    setNote("");
+
+    loadExpenses(filter);
   };
+
+  // Update Expense
+  const updateExpense = async () => {
+  const amountNumber = parseFloat(editAmount);
+
+  if (isNaN(amountNumber) || amountNumber <= 0) return;
+
+  const trimmedCategory = editCategory.trim();
+  if (!trimmedCategory) return;
+
+  await db.runAsync(
+    `UPDATE expenses
+     SET amount = ?, category = ?, note = ?
+     WHERE id = ?;`,
+    [amountNumber, trimmedCategory, editNote || null, editing.id]
+  );
+
+  setEditing(null); // close modal
+  loadExpenses(filter); // refresh list + totals
+};
 
   // Delete Expense
   const deleteExpense = async (id) => {
@@ -127,6 +169,18 @@ const loadAnalytics = async (mode = filter) => {
         {item.note ? <Text style={styles.expenseNote}>{item.note}</Text> : null}
       </View>
 
+      {/* EDIT BUTTON */}
+      <TouchableOpacity style={{ marginRight: 12 }} onPress={() => {
+        setEditingId(item.id)
+        setAmount(String(item.amount));
+        setCategory(item.category);
+        setNote(item.note || "");
+      }}
+      >
+        <Text style={{ color: "#60a5fa", fontSize: 18 }}>✎</Text>
+      </TouchableOpacity>
+
+      {/* DELETE BUTTON */}
       <TouchableOpacity onPress={() => deleteExpense(item.id)}>
         <Text style={styles.delete}>✕</Text>
       </TouchableOpacity>
@@ -152,7 +206,6 @@ const loadAnalytics = async (mode = filter) => {
 
     setup();
   }, []);
-
 
 // Return JSX
 return (
@@ -196,7 +249,7 @@ return (
           value={note}
           onChangeText={setNote}
         />
-        <Button title="Add Expense" onPress={addExpense} />
+        <Button title={editingId ? "Save Changes" : "Add Expense"} onPress={saveExpense}/>
       </View>
 
       <FlatList
