@@ -19,6 +19,7 @@ export default function ExpenseScreen() {
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
   const [total, setTotal] = useState(0); //Added for Total Spending
+  const [categoryTotals, setCategoryTotals] = useState([]); // Added for Category Totals
 
 // LOAD EXPENSES
 const loadExpenses = async (mode = filter) => {
@@ -41,10 +42,48 @@ const loadExpenses = async (mode = filter) => {
       AND strftime('%Y', date) = strftime('%Y', 'now')
       ORDER BY id DESC;
     `;
+  
+  const loadAnalytics = async (mode = filter) => {
+  let where = "";
+  
+  if (mode === "week") {
+    where = `
+      WHERE strftime('%W', date) = strftime('%W', 'now')
+      AND strftime('%Y', date) = strftime('%Y', 'now')
+    `;
+  }
+
+  if (mode === "month") {
+    where = `
+      WHERE strftime('%m', date) = strftime('%m', 'now')
+      AND strftime('%Y', date) = strftime('%Y', 'now')
+    `;
+  }
+
+  // ---- Overall Total ----
+  const totalRow = await db.getFirstAsync(`
+    SELECT SUM(amount) as total FROM expenses
+    ${where};
+  `);
+
+  setTotal(totalRow?.total || 0);
+
+  // ---- Category Totals ----
+  const categoryRows = await db.getAllAsync(`
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    ${where}
+    GROUP BY category
+    ORDER BY total DESC;
+  `);
+
+  setCategoryTotals(categoryRows);
+};
   }
 
   const rows = await db.getAllAsync(query, params);
   setExpenses(rows)
+  loadAnalytics(mode); // Load analytics data
 
   const sum = rows.reduce((acc, curr) => acc + item.amount, 0);
   setTotal(sum) //Added for total spending for this filter 
@@ -171,6 +210,23 @@ return (
         }
       />
 
+      <View style={styles.analyticsBox}>
+       <Text style={styles.analyticsHeading}>
+         Total Spending ({filter === "all" ? "All" : filter === "week" ? "This Week" : "This Month"}):
+       </Text>
+      <Text style={styles.analyticsTotal}>${total.toFixed(2)}</Text>
+
+       <Text style={styles.analyticsHeading}>By Category:</Text>
+        {categoryTotals.length === 0 ? (
+      <Text style={styles.analyticsEmpty}>No spending in this period.</Text>) : (categoryTotals.map((row) => (
+      <Text key={row.category} style={styles.analyticsCategory}>
+        {row.category}: ${Number(row.total).toFixed(2)}
+      </Text>
+         ))
+          )}
+      </View>
+
+
       <Text style={styles.footer}>
         Enter your expenses and theyll be saved locally with SQLite.
       </Text>
@@ -247,5 +303,32 @@ return (
     fontWeight: "700",
     marginBottom: 12,
   },
+  analyticsBox: {
+  marginTop: 20,
+  padding: 16,
+  backgroundColor: "#1f2937",
+  borderRadius: 8,
+},
+analyticsHeading: {
+  color: "#fbbf24",
+  fontSize: 16,
+  fontWeight: "700",
+  marginBottom: 8,
+},
+analyticsTotal: {
+  color: "#fff",
+  fontSize: 22,
+  fontWeight: "700",
+  marginBottom: 16,
+},
+analyticsCategory: {
+  color: "#e5e7eb",
+  fontSize: 14,
+  marginBottom: 4,
+},
+analyticsEmpty: {
+  color: "#9ca3af",
+  fontSize: 12,
+},
 });
 
